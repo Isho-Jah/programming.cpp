@@ -3,79 +3,183 @@
 
 using namespace std;
 
-// Structure definition
-struct Node {
-    string name;
-    int age;
-    double score;
-    Node* next;
+// Class representing a person (a node in the linked list)
+class Person {
+public:
+    string name;       // Person's name
+    int age;           // Person's age
+    double salary;     // Person's salary
+    Person* next;      // Pointer to the next person in the list
+
+    // Constructor to initialize the person object
+    Person(string name, int age, double salary)
+        : name(name), age(age), salary(salary), next(nullptr) {}
 };
 
-// Function to add a node at the beginning
-void addToBeginning(Node*& head, string name, int age, double score) {
-    Node* newNode = new Node{name, age, score, head};
-    head = newNode;
-}
+// Class representing the linked list of people
+class PersonList {
+private:
+    Person* head;  // Pointer to the first element of the list
 
-// Function to add a node at the end
-void addToEnd(Node*& head, string name, int age, double score) {
-    Node* newNode = new Node{name, age, score, nullptr};
-    if (!head) {
+public:
+    // Constructor initializes the list to be empty
+    PersonList() : head(nullptr) {}
+
+    // Destructor to free memory of all nodes
+    ~PersonList() {
+        while (head != nullptr) {
+            Person* temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
+
+    // Add a person to the beginning of the list
+    void addToBeginning(string name, int age, double salary) {
+        Person* newNode = new Person(name, age, salary);
+        newNode->next = head;
         head = newNode;
-        return;
     }
-    Node* temp = head;
-    while (temp->next) {
-        temp = temp->next;
-    }
-    temp->next = newNode;
-}
 
-// Function to display the list
-void displayList(Node* head) {
-    Node* temp = head;
-    while (temp) {
-        cout << "Name: " << temp->name << ", Age: " << temp->age << ", Score: " << temp->score << endl;
-        temp = temp->next;
-    }
-}
+    // Add a person to the end of the list
+    void addToEnd(string name, int age, double salary) {
+        Person* newNode = new Person(name, age, salary);
 
-// Function to delete a node by name
-void deleteByName(Node*& head, string name) {
-    if (!head) return;
-    
-    if (head->name == name) {
-        Node* temp = head;
-        head = head->next;
-        delete temp;
-        return;
+        if (head == nullptr) {
+            // If list is empty, new node becomes the head
+            head = newNode;
+        }
+        else {
+            // Traverse to the last node
+            Person* temp = head;
+            while (temp->next != nullptr) {
+                temp = temp->next;
+            }
+            temp->next = newNode;
+        }
     }
-    
-    Node* current = head;
-    while (current->next && current->next->name != name) {
-        current = current->next;
-    }
-    
-    if (current->next) {
-        Node* temp = current->next;
-        current->next = current->next->next;
-        delete temp;
-    }
-}
 
+    // Add a person after a given person's name
+    void addAfter(string targetName, string name, int age, double salary) {
+        Person* temp = head;
+
+        // Search for the target name
+        while (temp != nullptr && temp->name != targetName) {
+            temp = temp->next;
+        }
+
+        if (temp != nullptr) {
+            // Target found, insert new node after it
+            Person* newNode = new Person(name, age, salary);
+            newNode->next = temp->next;
+            temp->next = newNode;
+        }
+        else {
+            cout << "Person with the name " << targetName << " not found." << endl;
+        }
+    }
+
+    // Add a person before a given person's name
+    void addBefore(string targetName, string name, int age, double salary) {
+        if (head == nullptr) {
+            cout << "The list is empty." << endl;
+            return;
+        }
+
+        // If the target is the head, add to beginning
+        if (head->name == targetName) {
+            addToBeginning(name, age, salary);
+            return;
+        }
+
+        // Traverse the list looking for the node before the target
+        Person* temp = head;
+        while (temp->next != nullptr && temp->next->name != targetName) {
+            temp = temp->next;
+        }
+
+        if (temp->next != nullptr) {
+            // Target found, insert new node before it
+            Person* newNode = new Person(name, age, salary);
+            newNode->next = temp->next;
+            temp->next = newNode;
+        }
+        else {
+            cout << "Person with the name " << targetName << " not found." << endl;
+        }
+    }
+
+    // Delete a person by their name
+    void deleteByName(string targetName) {
+        if (head == nullptr) {
+            cout << "The list is empty." << endl;
+            return;
+        }
+
+        // If the head is the target
+        if (head->name == targetName) {
+            Person* temp = head;
+            head = head->next;
+            delete temp;
+            return;
+        }
+
+        // Search for the node before the one to delete
+        Person* temp = head;
+        while (temp->next != nullptr && temp->next->name != targetName) {
+            temp = temp->next;
+        }
+
+        if (temp->next != nullptr) {
+            // Target found, delete it
+            Person* nodeToDelete = temp->next;
+            temp->next = temp->next->next;
+            delete nodeToDelete;
+        }
+        else {
+            cout << "Person with the name " << targetName << " not found." << endl;
+        }
+    }
+
+    // Print the entire list
+    void printList() const {
+        Person* temp = head;
+        while (temp != nullptr) {
+            cout << "Name: " << temp->name
+                 << ", Age: " << temp->age
+                 << ", Salary: " << temp->salary << endl;
+            temp = temp->next;
+        }
+    }
+};
+
+// Main function
 int main() {
-    Node* head = nullptr;
-    
-    addToBeginning(head, "Alice", 25, 85.5);
-    addToEnd(head, "Bob", 30, 90.0);
-    addToEnd(head, "Charlie", 22, 78.3);
-    
-    cout << "Initial List:\n";
-    displayList(head);
-    
-    deleteByName(head, "Bob");
-    cout << "\nList after deleting Bob:\n";
-    displayList(head);
-    
+    PersonList list;  // Create a list of persons
+
+    // Add persons to the list
+    list.addToEnd("Nikolay", 30, 50500);
+    list.addToBeginning("Anton", 25, 45000);
+    list.addToEnd("Konstantin", 23, 25000);
+
+    // Display the list after adding elements
+    cout << "List after adding people:" << endl;
+    list.printList();
+
+    // Add a new person after "Anton"
+    list.addAfter("Anton", "Alexey", 22, 40000);
+    cout << "\nList after adding a person after Anton:" << endl;
+    list.printList();
+
+    // Add a new person before "Konstantin"
+    list.addBefore("Konstantin", "Olga", 27, 52000);
+    cout << "\nList after adding a person before Konstantin:" << endl;
+    list.printList();
+
+    // Delete a person by name
+    list.deleteByName("Anton");
+    cout << "\nList after deleting Anton:" << endl;
+    list.printList();
+
     return 0;
 }
