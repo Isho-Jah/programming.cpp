@@ -1,169 +1,350 @@
-#include <iostream>             // Include the iostream library for input/output
-using namespace std;            // Use the standard namespace
+#include <iostream>
+using namespace std;
 
-class matr {
+// Vector class for mathematical vector operations
+class vect {
+private:
+    int dim;        // Stores the dimension (size) of the vector
+    double* b;      // Pointer to dynamically allocated array storing vector elements
+    int num;        // Unique identifier for each vector instance
+    static int count; // Static counter to track total number of vector objects created
+
 public:
-    int dim;                    // Matrix dimension (assumes square matrix)
-    double** a;                 // Pointer to dynamically allocated 2D array (matrix)
-    int num;                    // Unique ID number for each matrix object
-    static int count;           // Static counter to keep track of matrix objects
-
-    // Constructor
-    matr(int d = 3) : dim(d) {  // Constructor with default dimension 3
-        a = new double*[dim];   // Allocate array of row pointers
-        for (int i = 0; i < dim; ++i)
-            a[i] = new double[dim]; // Allocate each row
-
-        for (int i = 0; i < dim; ++i)
-            for (int j = 0; j < dim; ++j)
-                a[i][j] = 0;    // Initialize all elements to 0
-
-        num = ++count;         // Assign a unique matrix number
-        cout << "Constructed matr #" << num << endl; // Message when constructed
+    // Default constructor - creates empty vector
+    vect() : dim(0), b(nullptr) {
+        num = ++count;  // Assigns unique ID by incrementing static counter
+        cout << "Created vector #" << num << " (default)" << endl; // Creation message
     }
 
-    // Copy Constructor
-    matr(const matr& m) : dim(m.dim) { // Copy constructor
-        a = new double*[dim];   // Allocate memory for new matrix
-        for (int i = 0; i < dim; ++i) {
-            a[i] = new double[dim]; // Allocate each row
-            for (int j = 0; j < dim; ++j)
-                a[i][j] = m.a[i][j]; // Copy each element from source
+    // Parameterized constructor - creates vector of given dimension
+    vect(int n) : dim(n) {
+        b = new double[dim];  // Allocates memory for vector elements
+        for (int i = 0; i < dim; i++) b[i] = 0; // Initializes all elements to zero
+        num = ++count;  // Assigns unique ID
+        cout << "Created vector #" << num << " (dimension " << dim << ")" << endl;
+    }
+
+    // Copy constructor - creates copy of existing vector
+    vect(const vect& v) : dim(v.dim) {
+        b = new double[dim];  // Allocates new memory
+        for (int i = 0; i < dim; i++) b[i] = v.b[i]; // Copies all elements
+        num = ++count;  // New unique ID for the copy
+        cout << "Created vector #" << num << " (copy of vector #" << v.num << ")" << endl;
+    }
+
+    // Destructor - cleans up dynamically allocated memory
+    ~vect() {
+        delete[] b;  // Frees the allocated array
+        cout << "Destroyed vector #" << num << endl; // Destruction message
+    }
+
+    // Assignment operator - copies contents from one vector to another
+    vect& operator=(const vect& v) {
+        cout << "Assignment: vector #" << num << " = vector #" << v.num << endl;
+        if (this != &v) {  // Check for self-assignment
+            delete[] b;  // Free existing memory
+            dim = v.dim;  // Copy dimension
+            b = new double[dim];  // Allocate new memory
+            for (int i = 0; i < dim; i++) b[i] = v.b[i]; // Copy elements
         }
-        num = ++count;         // Assign a new unique number
-        cout << "Copied matr #" << num << endl; // Message when copied
+        return *this;  // Return reference to current object
     }
 
-    // Destructor
-    ~matr() {
-        for (int i = 0; i < dim; ++i)
-            delete[] a[i];     // Delete each row
-        delete[] a;            // Delete row pointers
-        cout << "Destructed matr #" << num << endl; // Message on destruction
-    }
-
-    // Assignment Operator
-    matr& operator=(const matr& m) {
-        if (this != &m) {      // Avoid self-assignment
-            for (int i = 0; i < dim; ++i)
-                delete[] a[i]; // Free current matrix memory
-            delete[] a;
-
-            dim = m.dim;       // Copy dimension
-            a = new double*[dim]; // Allocate new matrix
-            for (int i = 0; i < dim; ++i) {
-                a[i] = new double[dim];
-                for (int j = 0; j < dim; ++j)
-                    a[i][j] = m.a[i][j]; // Copy elements
-            }
+    // Vector addition operator
+    vect operator+(const vect& v) {
+        cout << "Addition: vector #" << num << " + vector #" << v.num << endl;
+        if (dim != v.dim) {  // Check for compatible dimensions
+            cerr << "Error: different dimensions!" << endl;
+            return vect();  // Return empty vector if incompatible
         }
-        cout << "Assigned matr #" << num << endl; // Message on assignment
-        return *this;           // Return reference to current object
+        vect res(dim);  // Create result vector
+        for (int i = 0; i < dim; i++) res.b[i] = b[i] + v.b[i]; // Element-wise addition
+        return res;  // Return result
     }
 
-    // Addition Operator Overload
-    matr operator+(const matr& m) const {
-        matr res(dim);         // Create result matrix
-        for (int i = 0; i < dim; ++i)
-            for (int j = 0; j < dim; ++j)
-                res.a[i][j] = a[i][j] + m.a[i][j]; // Element-wise addition
-        cout << "Added matr #" << num << " and #" << m.num << endl;
-        return res;            // Return result matrix
-    }
-
-    // Subtraction Operator Overload
-    matr operator-(const matr& m) const {
-        matr res(dim);         // Create result matrix
-        for (int i = 0; i < dim; ++i)
-            for (int j = 0; j < dim; ++j)
-                res.a[i][j] = a[i][j] - m.a[i][j]; // Element-wise subtraction
-        cout << "Subtracted matr #" << num << " and #" << m.num << endl;
-        return res;            // Return result matrix
-    }
-
-    // Unary Negation Operator Overload
-    matr operator-() const {
-        matr res(dim);         // Create result matrix
-        for (int i = 0; i < dim; ++i)
-            for (int j = 0; j < dim; ++j)
-                res.a[i][j] = -a[i][j]; // Negate each element
-        cout << "Negated matr #" << num << endl;
-        return res;            // Return result matrix
-    }
-
-    // Multiplication Operator Overload (Matrix * Matrix)
-    matr operator*(const matr& m) const {
-        matr res(dim);         // Create result matrix
-        for (int i = 0; i < dim; ++i)
-            for (int j = 0; j < dim; ++j) {
-                res.a[i][j] = 0; // Initialize result element
-                for (int k = 0; k < dim; ++k)
-                    res.a[i][j] += a[i][k] * m.a[k][j]; // Matrix multiplication
-            }
-        cout << "Multiplied matr #" << num << " and #" << m.num << endl;
-        return res;            // Return result matrix
-    }
-
-    // Scalar Multiplication Friend Function
-    friend matr operator*(double k, const matr& m) {
-        matr res(m.dim);       // Create result matrix
-        for (int i = 0; i < m.dim; ++i)
-            for (int j = 0; j < m.dim; ++j)
-                res.a[i][j] = k * m.a[i][j]; // Multiply each element by scalar
-        cout << "Scalar multiplied matr #" << m.num << " by " << k << endl;
-        return res;            // Return result matrix
-    }
-
-    // Print the matrix to console
-    void print() const {
-        cout << "matr #" << num << ":\n"; // Header
-        for (int i = 0; i < dim; ++i) {
-            for (int j = 0; j < dim; ++j)
-                cout << a[i][j] << " ";   // Print each element
-            cout << endl;                // New line per row
+    // Vector subtraction operator
+    vect operator-(const vect& v) {
+        cout << "Subtraction: vector #" << num << " - vector #" << v.num << endl;
+        if (dim != v.dim) {  // Dimension check
+            cerr << "Error: different dimensions!" << endl;
+            return vect();
         }
+        vect res(dim);
+        for (int i = 0; i < dim; i++) res.b[i] = b[i] - v.b[i]; // Element-wise subtraction
+        return res;
     }
+
+    // Unary minus operator (negation)
+    vect operator-() {
+        cout << "Unary minus: -vector #" << num << endl;
+        vect res(dim);  // Create result vector
+        for (int i = 0; i < dim; i++) res.b[i] = -b[i]; // Negate each element
+        return res;
+    }
+
+    // Dot product operator
+    double operator*(const vect& v) {
+        cout << "Dot product: vector #" << num << " * vector #" << v.num << endl;
+        if (dim != v.dim) {  // Dimension check
+            cerr << "Error: different dimensions!" << endl;
+            return 0.0;  // Return zero if incompatible
+        }
+        double res = 0;  // Initialize result
+        for (int i = 0; i < dim; i++) res += b[i] * v.b[i]; // Sum of products
+        return res;
+    }
+
+    // Friend function for scalar multiplication (allows commutative operation)
+    friend vect operator*(double k, const vect& v);
+
+    // Print vector contents
+    void print() {
+        cout << "Vector #" << num << " [";
+        for (int i = 0; i < dim; i++) cout << b[i] << (i < dim - 1 ? ", " : "");
+        cout << "]" << endl;
+    }
+
+    // Getter methods
+    int get_dim() const { return dim; }  // Returns vector dimension
+    int get_num() const { return num; }  // Returns vector ID
+    double get(int i) const { return (i >= 0 && i < dim) ? b[i] : 0.0; } // Safe element access
+    void set(int i, double val) { if (i >= 0 && i < dim) b[i] = val; } // Safe element modification
 };
 
-// Initialize static variable count to 0
+// Initialize static counter
+int vect::count = 0;
+
+// Scalar multiplication (friend function implementation)
+vect operator*(double k, const vect& v) {
+    cout << "Multiplication: " << k << " * vector #" << v.num << endl;
+    vect res(v.dim);  // Create result vector
+    for (int i = 0; i < v.dim; i++) res.set(i, k * v.get(i)); // Multiply each element
+    return res;
+}
+
+// Matrix class for mathematical matrix operations
+class matr {
+private:
+    int n, m;       // Dimensions (rows, columns)
+    double** a;     // 2D array for matrix elements
+    int num;        // Unique identifier
+    static int count; // Static counter for matrix instances
+
+public:
+    // Default constructor - creates empty matrix
+    matr() : n(0), m(0), a(nullptr) {
+        num = ++count;
+        cout << "Created matrix #" << num << " (default)" << endl;
+    }
+
+    // Parameterized constructor - creates matrix of given dimensions
+    matr(int rows, int cols) : n(rows), m(cols) {
+        a = new double*[n];  // Allocate row pointers
+        for (int i = 0; i < n; i++) {
+            a[i] = new double[m];  // Allocate each row
+            for (int j = 0; j < m; j++) a[i][j] = 0; // Initialize to zero
+        }
+        num = ++count;
+        cout << "Created matrix #" << num << " (" << n << "x" << m << ")" << endl;
+    }
+
+    // Copy constructor - creates copy of existing matrix
+    matr(const matr& mat) : n(mat.n), m(mat.m) {
+        a = new double*[n];  // Allocate row pointers
+        for (int i = 0; i < n; i++) {
+            a[i] = new double[m];  // Allocate each row
+            for (int j = 0; j < m; j++) a[i][j] = mat.a[i][j]; // Copy elements
+        }
+        num = ++count;
+        cout << "Created matrix #" << num << " (copy of matrix #" << mat.num << ")" << endl;
+    }
+
+    // Destructor - cleans up dynamically allocated memory
+    ~matr() {
+        if (a != nullptr) {  // Check if memory was allocated
+            for (int i = 0; i < n; i++) delete[] a[i]; // Free each row
+            delete[] a;  // Free row pointers
+        }
+        cout << "Destroyed matrix #" << num << endl;
+    }
+
+    // Assignment operator - copies matrix contents
+    matr& operator=(const matr& mat) {
+        cout << "Assignment: matrix #" << num << " = matrix #" << mat.num << endl;
+        if (this != &mat) {  // Check for self-assignment
+            // Free existing memory
+            for (int i = 0; i < n; i++) delete[] a[i];
+            delete[] a;
+
+            // Copy dimensions and allocate new memory
+            n = mat.n;
+            m = mat.m;
+            a = new double*[n];
+            for (int i = 0; i < n; i++) {
+                a[i] = new double[m];
+                for (int j = 0; j < m; j++) a[i][j] = mat.a[i][j]; // Copy elements
+            }
+        }
+        return *this;
+    }
+
+    // Matrix addition operator
+    matr operator+(const matr& mat) {
+        cout << "Addition: matrix #" << num << " + matrix #" << mat.num << endl;
+        if (n != mat.n || m != mat.m) {  // Dimension check
+            cerr << "Error: different matrix dimensions!" << endl;
+            return matr();  // Return empty matrix if incompatible
+        }
+        matr res(n, m);  // Create result matrix
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                res.a[i][j] = a[i][j] + mat.a[i][j]; // Element-wise addition
+        return res;
+    }
+
+    // Matrix subtraction operator
+    matr operator-(const matr& mat) {
+        cout << "Subtraction: matrix #" << num << " - matrix #" << mat.num << endl;
+        if (n != mat.n || m != mat.m) {  // Dimension check
+            cerr << "Error: different matrix dimensions!" << endl;
+            return matr();
+        }
+        matr res(n, m);
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                res.a[i][j] = a[i][j] - mat.a[i][j]; // Element-wise subtraction
+        return res;
+    }
+
+    // Unary minus operator (matrix negation)
+    matr operator-() {
+        cout << "Unary minus: -matrix #" << num << endl;
+        matr res(n, m);  // Create result matrix
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                res.a[i][j] = -a[i][j]; // Negate each element
+        return res;
+    }
+
+    // Matrix multiplication operator
+    matr operator*(const matr& mat) {
+        cout << "Multiplication: matrix #" << num << " * matrix #" << mat.num << endl;
+        if (m != mat.n) {  // Check for compatible dimensions
+            cerr << "Error: incompatible matrix dimensions!" << endl;
+            return matr();
+        }
+        matr res(n, mat.m);  // Result has rows of first, columns of second
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < mat.m; j++)
+                for (int k = 0; k < m; k++)
+                    res.a[i][j] += a[i][k] * mat.a[k][j]; // Dot product of row and column
+        return res;
+    }
+
+    // Matrix-vector multiplication operator
+    vect operator*(const vect& v) {
+        cout << "Multiplication: matrix #" << num << " * vector #" << v.get_num() << endl;
+        if (m != v.get_dim()) {  // Check for compatible dimensions
+            cerr << "Error: incompatible dimensions!" << endl;
+            return vect();
+        }
+        vect res(n);  // Result vector has size equal to matrix rows
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                res.set(i, res.get(i) + a[i][j] * v.get(j)); // Matrix-vector product
+        return res;
+    }
+
+    // Friend function for scalar multiplication
+    friend matr operator*(double k, const matr& mat);
+
+    // Print matrix contents
+    void print() {
+        cout << "Matrix #" << num << " (" << n << "x" << m << "):" << endl;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) cout << a[i][j] << " "; // Print each element
+            cout << endl;
+        }
+    }
+
+    // Getter methods
+    int get_n() const { return n; }  // Returns number of rows
+    int get_m() const { return m; }  // Returns number of columns
+    int get_num() const { return num; }  // Returns matrix ID
+    double get(int i, int j) const { return (i >= 0 && i < n && j >= 0 && j < m) ? a[i][j] : 0.0; } // Safe element access
+    void set(int i, int j, double val) { if (i >= 0 && i < n && j >= 0 && j < m) a[i][j] = val; } // Safe element modification
+};
+
+// Initialize static counter
 int matr::count = 0;
 
-// Main function to test matrix operations
+// Scalar multiplication for matrices (friend function implementation)
+matr operator*(double k, const matr& mat) {
+    cout << "Multiplication: " << k << " * matrix #" << mat.num << endl;
+    matr res(mat.n, mat.m);  // Create result matrix
+    for (int i = 0; i < mat.n; i++)
+        for (int j = 0; j < mat.m; j++)
+            res.set(i, j, k * mat.get(i, j)); // Multiply each element by scalar
+    return res;
+}
+
+// Main function demonstrating vector and matrix operations
 int main() {
-    matr m1(3), m2(3);          // Create two 3x3 matrices
+    cout << "=== Vector demonstration ===" << endl;
+    // Create two 3D vectors
+    vect v1(3), v2(3);
+    // Set vector elements
+    v1.set(0, 1); v1.set(1, 2); v1.set(2, 3);
+    v2.set(0, 4); v2.set(1, 5); v2.set(2, 6);
 
-    // Fill m1 with values from 1 to 9
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j)
-            m1.a[i][j] = i * 3 + j + 1;
+    cout << "\nInitial vectors:" << endl;
+    v1.print();  // Print first vector
+    v2.print();  // Print second vector
 
-    // Fill m2 with values from 9 to 1
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j)
-            m2.a[i][j] = 9 - (i * 3 + j);
+    cout << "\nVector operations:" << endl;
+    vect v3 = v1 + v2;  // Vector addition
+    v3.print();
 
-    // Print matrix m1
-    cout << "Matrix m1:" << endl;
-    m1.print();
+    vect v4 = v1 - v2;  // Vector subtraction
+    v4.print();
 
-    // Print matrix m2
-    cout << "Matrix m2:" << endl;
-    m2.print();
+    vect v5 = -v1;  // Vector negation
+    v5.print();
 
-    // Scalar multiplication: m3 = 2 * m1
-    matr m3 = 2.0 * m1;
-    cout << "Matrix m3 (2 * m1):" << endl;
+    double dot = v1 * v2;  // Dot product
+    cout << "Dot product: " << dot << endl;
+
+    vect v6 = 2.5 * v1;  // Scalar multiplication
+    v6.print();
+
+    cout << "\n=== Matrix demonstration ===" << endl;
+    // Create 2x3 and 3x2 matrices
+    matr m1(2, 3), m2(3, 2);
+    // Set matrix elements
+    m1.set(0, 0, 1); m1.set(0, 1, 2); m1.set(0, 2, 3);
+    m1.set(1, 0, 4); m1.set(1, 1, 5); m1.set(1, 2, 6);
+
+    m2.set(0, 0, 7); m2.set(0, 1, 8);
+    m2.set(1, 0, 9); m2.set(1, 1, 10);
+    m2.set(2, 0, 11); m2.set(2, 1, 12);
+
+    cout << "\nInitial matrices:" << endl;
+    m1.print();  // Print first matrix
+    m2.print();  // Print second matrix
+
+    cout << "\nMatrix operations:" << endl;
+    matr m3 = m1 * m2;  // Matrix multiplication
     m3.print();
 
-    // Addition: m4 = m1 + m2
-    matr m4 = m1 + m2;
-    cout << "Matrix m4 (m1 + m2):" << endl;
+    matr m4 = -m1;  // Matrix negation
     m4.print();
 
-    // Multiplication: m5 = m1 * m2
-    matr m5 = m1 * m2;
-    cout << "Matrix m5 (m1 * m2):" << endl;
+    matr m5 = 0.5 * m2;  // Scalar multiplication
     m5.print();
 
-    return 0;                   // Program completed successfully
+    cout << "\nMatrix-vector multiplication:" << endl;
+    vect v7 = m1 * v1;  // Matrix-vector product
+    v7.print();
+
+    return 0;
 }
