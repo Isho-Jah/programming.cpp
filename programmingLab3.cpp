@@ -1,208 +1,203 @@
-#include <iostream>  // For console input/output
-#include <cmath>     // For math functions like sin() and cos()
-using namespace std; // So we don't need to type std:: everywhere
+#include <iostream>   // Include library for input/output operations (cout, cin)
+#include <cmath>      // Include math functions like sin, cos for rotation calculations
 
-/*
-* The base Point class - abstract since it contains pure virtual methods
-* Represents a basic point in 2D space
-*/
-class Point {
-protected:
-    double x, y; // The point coordinates
+// Start of user-defined namespace to avoid name collisions
+namespace usernamespace {
+
+const double PI = 3.1415926535; // Define constant Pi for angle calculations
+
+// Abstract base class representing a vertex (a point or similar element)
+class Vertex {
 public:
-    // Sets up the point at given coordinates (default is origin)
+    virtual void draw() const = 0;          // Draw the vertex - must be implemented by derived classes
+    virtual void erase() const = 0;         // Erase the vertex - must be implemented by derived classes
+    virtual void move(double dx, double dy) = 0; // Move the vertex by dx and dy - must be implemented
+    virtual void rotate(double angleDegrees) = 0; // Rotate the vertex around origin by angleDegrees - must be implemented
+    virtual ~Vertex() {}                     // Virtual destructor for proper cleanup of derived classes
+};
+
+// Concrete class representing a point in 2D space, inherits from Vertex
+class Point : public Vertex {
+private:
+    double x, y;                            // Coordinates of the point
+
+public:
+    // Constructor with default coordinates (0,0)
     Point(double x = 0, double y = 0) : x(x), y(y) {}
 
-    // These must be implemented by any class that inherits from Point
-    virtual void draw() const = 0;   // How to draw this shape
-    virtual void erase() const = 0;  // How to erase this shape
+    double getX() const { return x; }      // Accessor for x coordinate
+    double getY() const { return y; }      // Accessor for y coordinate
 
-    // Moves the point by the given amounts
-    virtual void move(double dx, double dy) {
+    // Print the point's coordinates to the console
+    void draw() const override {
+        std::cout << "Point: (" << x << ", " << y << ")\n";
+    }
+
+    // Print message that point is erased
+    void erase() const override {
+        std::cout << "Point erased\n";
+    }
+
+    // Move the point by dx and dy (translate coordinates)
+    void move(double dx, double dy) override {
         x += dx;
         y += dy;
-        cout << "Moved shape to (" << x << ", " << y << ")" << endl;
     }
 
-    // How to rotate the shape (must be implemented by child classes)
-    virtual void rotate(double angle) = 0;
-
-    // Virtual destructor ensures proper cleanup
-    virtual ~Point() {}
+    // Rotate the point around origin (0,0) by given angle in degrees
+    void rotate(double angleDegrees) override {
+        double rad = angleDegrees * PI / 180.0;  // Convert angle to radians for trig functions
+        double newX = x * cos(rad) - y * sin(rad); // Apply 2D rotation formula for x
+        double newY = x * sin(rad) + y * cos(rad); // Apply 2D rotation formula for y
+        x = newX;                               // Update x coordinate
+        y = newY;                               // Update y coordinate
+    }
 };
 
-/*
-* Line class - represents a line segment between two points
-* Inherits from Point (first endpoint) and stores second endpoint
-*/
-class Line : public Point {
-protected:
-    double x2, y2; // The second endpoint
+// Abstract base class for shapes (polygons, lines, etc.)
+class Shape {
 public:
-    // Creates a line from (x1,y1) to (x2,y2)
-    Line(double x1, double y1, double x2, double y2) 
-        : Point(x1, y1), x2(x2), y2(y2) {}
+    virtual void draw() const = 0;          // Draw the shape - must be implemented by derived classes
+    virtual void erase() const = 0;         // Erase the shape - must be implemented
+    virtual void move(double dx, double dy) = 0;  // Move shape by dx, dy - must be implemented
+    virtual void rotate(double angle) = 0;  // Rotate shape by angle - must be implemented
+    virtual ~Shape() {}                      // Virtual destructor for cleanup
+};
 
-    // Shows the line on screen
+// Class representing a line, derived from Shape
+class Line : public Shape {
+private:
+    Point a, b;                             // Two endpoints of the line
+
+public:
+    // Constructor initializes the line with two points a and b
+    Line(Point a, Point b) : a(a), b(b) {}
+
+    // Draw line by drawing its endpoints (simplified)
     void draw() const override {
-        cout << "Drawing line from (" << x << "," << y 
-             << ") to (" << x2 << "," << y2 << ")" << endl;
+        std::cout << "Line from "; a.draw();
+        std::cout << " to "; b.draw();
     }
 
-    // Clears the line from screen
+    // Erase line by printing a message
     void erase() const override {
-        cout << "Clearing line from (" << x << "," << y 
-             << ") to (" << x2 << "," << y2 << ")" << endl;
+        std::cout << "Line erased\n";
     }
 
-    // Shifts the entire line by (dx,dy)
+    // Move both endpoints by dx and dy
     void move(double dx, double dy) override {
-        Point::move(dx, dy); // Move first point
-        x2 += dx; // Move second point
-        y2 += dy;
+        a.move(dx, dy);
+        b.move(dx, dy);
     }
 
-    // Rotates the second point around the first point
+    // Rotate both endpoints by given angle around origin
     void rotate(double angle) override {
-        // Convert angle to radians for math functions
-        double radians = angle * M_PI / 180.0;
-        
-        // Calculate offset from rotation center
-        double dx = x2 - x;
-        double dy = y2 - y;
-        
-        // Apply rotation formulas
-        double newX = dx * cos(radians) - dy * sin(radians);
-        double newY = dx * sin(radians) + dy * cos(radians);
-        
-        // Update second point position
-        x2 = x + newX;
-        y2 = y + newY;
-        
-        cout << "Rotated line to new endpoint (" << x2 << "," << y2 << ")" << endl;
+        a.rotate(angle);
+        b.rotate(angle);
     }
 };
 
-/*
-* Parallelogram class - base for several quadrilateral shapes
-* Uses virtual inheritance to prevent issues with multiple inheritance
-*/
-class Parallelogram : virtual public Point {
+// Class for quadrilaterals, inherits from Shape
+class Quadrilateral : public Shape {
 protected:
-    double width, height; // The base and height measurements
+    Point p1, p2, p3, p4;                   // Four vertices of the quadrilateral
+
 public:
-    // Creates parallelogram at (x,y) with given dimensions
-    Parallelogram(double x, double y, double w, double h) 
-        : Point(x, y), width(w), height(h) {}
+    // Constructor initializes four points of the quadrilateral
+    Quadrilateral(Point a, Point b, Point c, Point d)
+        : p1(a), p2(b), p3(c), p4(d) {}
 
-    // Displays the parallelogram
+    // Draw all four vertices
     void draw() const override {
-        cout << "Drawing parallelogram at (" << x << "," << y 
-             << ") with width " << width << " and height " << height << endl;
+        std::cout << "Figure with vertices:\n";
+        p1.draw(); p2.draw(); p3.draw(); p4.draw();
     }
 
-    // Removes the parallelogram from display
+    // Erase figure by printing a message
     void erase() const override {
-        cout << "Removing parallelogram" << endl;
+        std::cout << "Figure erased\n";
     }
 
-    // Rotates the shape (simplified for this example)
+    // Move all four points by dx and dy
+    void move(double dx, double dy) override {
+        p1.move(dx, dy);
+        p2.move(dx, dy);
+        p3.move(dx, dy);
+        p4.move(dx, dy);
+    }
+
+    // Rotate all four points around origin by angle degrees
     void rotate(double angle) override {
-        cout << "Rotating parallelogram by " << angle << " degrees" << endl;
+        p1.rotate(angle);
+        p2.rotate(angle);
+        p3.rotate(angle);
+        p4.rotate(angle);
     }
 };
 
-/*
-* Rectangle class - special case of parallelogram
-* Inherits all functionality but can have its own specific behaviors
-*/
-class Rectangle : public Parallelogram {
+// Square class inherits from Quadrilateral virtually to support multiple inheritance
+class Square : virtual public Quadrilateral {
 public:
-    // Creates rectangle with given position and dimensions
-    Rectangle(double x, double y, double w, double h) 
-        : Parallelogram(x, y, w, h) {}
-
-    // Rectangle-specific drawing
-    void draw() const override {
-        cout << "Drawing rectangle at (" << x << "," << y 
-             << ") sized " << width << "x" << height << endl;
-    }
-
-    // Rectangle-specific erase
-    void erase() const override {
-        cout << "Clearing rectangle from screen" << endl;
-    }
+    // Constructor creates square from origin point and size (length of side)
+    Square(Point origin, double size)
+        : Quadrilateral(
+            origin,
+            Point(origin.getX() + size, origin.getY()),
+            Point(origin.getX() + size, origin.getY() + size),
+            Point(origin.getX(), origin.getY() + size)) {}
 };
 
-/*
-* Rhombus class - another parallelogram specialization
-* Both pairs of sides equal length
-*/
-class Rhombus : public Parallelogram {
+// Rectangle class derived from Quadrilateral
+class Rectangle : public Quadrilateral {
 public:
-    // Creates rhombus with given diagonals
-    Rhombus(double x, double y, double d1, double d2) 
-        : Parallelogram(x, y, d1, d2) {}
-
-    // Rhombus display
-    void draw() const override {
-        cout << "Drawing rhombus at (" << x << "," << y 
-             << ") with diagonals " << width << " and " << height << endl;
-    }
-
-    // Rhombus removal
-    void erase() const override {
-        cout << "Erasing rhombus from display" << endl;
-    }
+    // Constructor creates rectangle from origin point, width, and height
+    Rectangle(Point origin, double width, double height)
+        : Quadrilateral(
+            origin,
+            Point(origin.getX() + width, origin.getY()),
+            Point(origin.getX() + width, origin.getY() + height),
+            Point(origin.getX(), origin.getY() + height)) {}
 };
 
-/*
-* Square class - special case of both rectangle and rhombus
-* Uses virtual inheritance to avoid "diamond problem"
-*/
-class Square : virtual public Parallelogram {
+// Parallelogram class inherits Square virtually and redefines vertices
+class Parallelogram : public Square {
 public:
-    // Creates square with equal sides
-    Square(double x, double y, double side) 
-        : Point(x, y), Parallelogram(x, y, side, side) {}
-
-    // Square rendering
-    void draw() const override {
-        cout << "Drawing square at (" << x << "," << y 
-             << ") with side length " << width << endl;
-    }
-
-    // Square clearing
-    void erase() const override {
-        cout << "Removing square from view" << endl;
-    }
+    // Constructor creates parallelogram with base, height, and horizontal offset for slant
+    Parallelogram(Point origin, double base, double height, double offset)
+        : Square(origin, base), // Initialize base square with base length
+          Quadrilateral(
+              origin,
+              Point(origin.getX() + base, origin.getY()),
+              Point(origin.getX() + base + offset, origin.getY() + height),
+              Point(origin.getX() + offset, origin.getY() + height)) {}
 };
 
-// Main program to test our geometry classes
+} // end namespace usernamespace
+
+
 int main() {
-    // Array to hold different shapes (all treated as Points)
-    Point* shapes[5];
+    setlocale(LC_ALL,"RU"); // Set locale for Russian output (not essential for logic)
 
-    // Create one of each shape type
-    shapes[0] = new Line(0, 0, 3, 4);          // Simple line
-    shapes[1] = new Rectangle(1, 1, 4, 2);     // 4x2 rectangle
-    shapes[2] = new Rhombus(2, 2, 5, 5);       // Rhombus with equal diagonals
-    shapes[3] = new Square(0, 0, 3);           // 3x3 square
-    shapes[4] = new Parallelogram(1, 1, 3, 4); // Generic parallelogram
+    // Create a line using Point class within usernamespace
+    usernamespace::Line l(usernamespace::Point(0, 0), usernamespace::Point(2, 2));
+    l.draw();                      // Draw the line
+    l.move(1, 1);                  // Move line by (1,1)
+    l.rotate(45);                  // Rotate line 45 degrees around origin
+    std::cout << "\nAfter move and rotation:\n";
+    l.draw();                      // Draw the transformed line
 
-    // Demonstrate each shape's capabilities
-    for (int i = 0; i < 5; ++i) {
-        shapes[i]->draw();    // Show the shape
-        shapes[i]->move(1, 1); // Move it right and up
-        shapes[i]->rotate(45); // Give it a 45 degree turn
-        shapes[i]->erase();    // Clear it from screen
-        cout << "------------------------------------" << endl;
-    }
+    std::cout << "\n";
 
-    // Clean up all allocated memory
-    for (int i = 0; i < 5; ++i) {
-        delete shapes[i];
-    }
+    // Create and draw a rectangle at origin (0,0) with width 4 and height 2
+    usernamespace::Rectangle r(usernamespace::Point(0, 0), 4, 2);
+    r.draw();
 
-    return 0;
+    std::cout << "\n";
+
+    // Create and draw a parallelogram at origin with base=3, height=2, and offset=1
+    usernamespace::Parallelogram p(usernamespace::Point(0, 0), 3, 2, 1);
+    p.draw();
+
+    return 0; // Exit the program
 }
+
